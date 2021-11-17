@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import *
 import random
 import numpy as np
+from matplotlib import pyplot as plt
 
 
 class Agent(ABC):
@@ -9,7 +10,7 @@ class Agent(ABC):
         self.money = 0
 
     @abstractmethod
-    def offer(self, recipient: 'Agent') -> float:
+    def make_offer(self, recipient: 'Agent') -> float:
         pass
 
     def increment_money(self, amount):
@@ -41,7 +42,7 @@ class ConstantAgent(Agent):
         self.offer = offer
         self.acceptance = offer if acceptance is None else acceptance
 
-    def offer(self, recipient: 'Agent') -> float:
+    def make_offer(self, recipient: 'Agent') -> float:
         return self.offer
 
     def accept(self, offerer: 'Agent', amount: float) -> bool:
@@ -68,15 +69,20 @@ class Tournament:
         self.offer_list.clear()
         self.num_accepts = 0
 
+    def plot_metrics(self):
+        for instrument in self.instruments:
+            instrument.plot()
+
     def step(self, randomize: bool = True):
         n = len(self.agents)
         pairs = np.arange(n)
         if randomize:
             np.random.shuffle(pairs)
         pairs = pairs.reshape((n // 2, 2))
-        for offerer, recipient in pairs:
+        for offerer_index, recipient_index in pairs:
+            offerer, recipient = self.agents[offerer_index], self.agents[recipient_index]
             for _ in range(self.iterations):
-                offer = offerer.offer(recipient)
+                offer = offerer.make_offer(recipient)
                 self.num_accepts += 1 if recipient.play(offerer, offer) else 0
                 self.offer_list.append(offer)
 
@@ -102,22 +108,54 @@ class Instrument(ABC):
         self.metrics = []
 
     @abstractmethod
+    def title(self):
+        pass
+
+    @abstractmethod
     def measure(self, tour: Tournament):
         pass
 
     def update(self, tour: Tournament):
         self.metrics.append(self.measure(tour))
 
+    def plot(self):
+        plt.plot(self.metrics)
+        plt.title(self.title())
+        plt.show()
+
 
 class OpeningInstrument(Instrument):
     def measure(self, tour: Tournament):
         return np.mean(tour.offer_list)
+
+    def title(self):
+        return 'Opening'
 
 
 class NicenessInstrument(Instrument):
     def measure(self, tour: Tournament):
         return tour.num_accepts
 
+    def title(self):
+        return 'Niceness'
+
+
+class FitnessInstrument(Instrument):
+    def measure(self, tour: Tournament):
+        return np.mean([agent.money for agent in tour.agents])
+
+    def title(self):
+        return 'Fitness'
+
 
 def main():
     t = Tournament(50, lambda: ConstantAgent(random.random()))
+    t.instruments.append(OpeningInstrument())
+    t.instruments.append(NicenessInstrument())
+    t.instruments.append(FitnessInstrument())
+    t.loop(100)
+    t.plot_metrics()
+
+
+if __name__ == '__main__':
+    main()
