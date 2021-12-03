@@ -49,7 +49,9 @@ class ConstantAgent(Agent):
         return amount >= self.acceptance
 
     def copy(self):
-        return ConstantAgent(self.offer, self.acceptance)
+        offer_mutate = np.random.choice([-0.01, 0, 0.01])
+        accept_mutate = np.random.choice([-0.01, 0, 0.01])
+        return ConstantAgent(self.offer + offer_mutate, self.acceptance + accept_mutate)
 
 
 class Tournament:
@@ -87,16 +89,18 @@ class Tournament:
                 self.offer_list.append(offer)
 
     def loop(self, rounds: int = 1):
-        for _ in range(rounds):
+        for i in range(rounds):
             for _ in range(self.games_per_round):
                 self.step()
-                self.update_instruments()
-                self.reset_metrics()
+            self.update_instruments()
+            self.reset_metrics()
             lowest = min(range(len(self.agents)), key=lambda i: self.agents[i].money)
             highest = max(range(len(self.agents)), key=lambda i: self.agents[i].money)
             self.agents[lowest] = self.agents[highest].copy()
             for a in self.agents:
                 a.money = 0
+            if i % (rounds / 100) == 0:
+                print(i)
 
     def update_instruments(self):
         for instrument in self.instruments:
@@ -134,10 +138,18 @@ class OpeningInstrument(Instrument):
 
 class NicenessInstrument(Instrument):
     def measure(self, tour: Tournament):
-        return tour.num_accepts
+        return tour.num_accepts / (len(tour.agents) * tour.iterations * tour.games_per_round)
 
     def title(self):
         return 'Niceness'
+
+
+class AcceptanceInstrument(Instrument):
+    def measure(self, tour: Tournament):
+        return np.mean([a.acceptance for a in tour.agents])
+
+    def title(self):
+        return 'Acceptance Threshold'
 
 
 class FitnessInstrument(Instrument):
@@ -149,11 +161,12 @@ class FitnessInstrument(Instrument):
 
 
 def main():
-    t = Tournament(50, lambda: ConstantAgent(random.random()))
+    t = Tournament(1000, lambda: ConstantAgent(random.random()), games_per_round=1)
     t.instruments.append(OpeningInstrument())
     t.instruments.append(NicenessInstrument())
     t.instruments.append(FitnessInstrument())
-    t.loop(100)
+    t.instruments.append(AcceptanceInstrument())
+    t.loop(100000 // t.games_per_round)
     t.plot_metrics()
 
 
