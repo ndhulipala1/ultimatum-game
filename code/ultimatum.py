@@ -23,6 +23,9 @@ class Agent(ABC):
             offerer.increment_money(1 - amount)
         return accept
 
+    def reset(self):
+        self.money = 0
+
     @abstractmethod
     def accept(self, offerer: 'Agent', amount: float) -> bool:
         pass
@@ -52,6 +55,61 @@ class ConstantAgent(Agent):
         offer_mutate = np.random.choice([-0.01, 0, 0.01])
         accept_mutate = np.random.choice([-0.01, 0, 0.01])
         return ConstantAgent(self.offer + offer_mutate, self.acceptance + accept_mutate)
+
+class AdaptingAgent(Agent):
+
+    keys = [(None, None),
+            (None, True),
+            (None, False),
+            (True, True),
+            (True, False),
+            (False, True),
+            (False, False)]
+
+    def __init__(self, offer_vals: List[float] = None, accept_vals: List[float] = None):
+        """
+        :param offer: What this agent will offer
+        :param acceptance: The minimum amount this agent will accept
+        """
+        super().__init__()
+        self.offer = 0
+        self.acceptance = 0
+        self.offer_vals = offer_vals
+        self.accept_vals = accept_vals
+        self.genotype = {'A': dict(zip(self.keys, self.accept_vals)), 'O': dict(zip(self.keys, self.offer_vals))}
+        self.hist = (None, None)
+
+    def make_offer(self, recipient: 'Agent'):
+        self.offer += self.genotype['O'][self.hist]
+        return self.offer
+
+    def play(self, offerer: 'Agent', amount: float) -> bool:
+        accept = self.accept(offerer, amount)
+        if accept:
+            self.increment_money(amount)
+            offerer.increment_money(1 - amount)
+        self.hist = self.hist[1], accept
+        offerer.hist = offerer.hist[1], accept
+        return accept
+
+    def reset(self):
+        super().reset()
+        self.hist = None, None
+
+    def accept(self, offerer: 'Agent', amount: float) -> bool:
+        self.accept += self.genotype['A'][self.hist]
+        return self.accept
+
+    def copy(self):
+        offer_mutate = self.mutate_vals(self.offer_vals)
+        accept_mutate = self.mutate_vals(self.accept_vals)
+        return AdaptingAgent(self, offer_mutate, accept_mutate)
+
+    def mutate_vals(self, vals: List[float], prob=0.67) -> List[float]:
+        if np.random.random() < prob_mutate:
+            rand_idx = np.random.random(len(vals))
+            vals[rand_idx] += np.random.choice([-0.01, 0.01])
+        return vals
 
 
 class Tournament:
@@ -98,7 +156,7 @@ class Tournament:
             highest = max(range(len(self.agents)), key=lambda i: self.agents[i].money)
             self.agents[lowest] = self.agents[highest].copy()
             for a in self.agents:
-                a.money = 0
+                a.reset()
             if i % (rounds / 100) == 0:
                 print(i)
 
