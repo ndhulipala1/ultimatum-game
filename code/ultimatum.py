@@ -107,10 +107,10 @@ class AdaptingAgent(Agent):
         accept_mutate = self.mutate_vals(self.accept_vals)
         return AdaptingAgent(offer_mutate, accept_mutate)
 
-    def mutate_vals(self, vals: List[float], prob=0.67) -> List[float]:
-        if np.random.random() < prob:
-            rand_idx = np.random.choice(range(len(vals)))
-            vals[rand_idx] += (np.random.random() - 0.5) / 20
+    def mutate_vals(self, vals: List[float], prob=0.2) -> List[float]:
+        for i in range(len(vals)):
+            if np.random.random() < prob:
+                vals[i] += (np.random.random() - 0.5) / 20
         return vals
 
 
@@ -125,15 +125,19 @@ class Tournament:
         self.games_per_round = games_per_round
         self.offer_list: List[float] = []
         self.num_accepts = 0
+        self.num_games = 0
         self.opening = OpeningInstrument()
         self.niceness = NicenessInstrument()
         self.acceptance = AcceptanceInstrument()
         self.fitness = FitnessInstrument()
-        self.instruments = [self.opening, self.niceness, self.acceptance, self.fitness]
+        self.responses = [ResponseInstrument(True, True), ResponseInstrument(True, False),
+                          ResponseInstrument(False, True), ResponseInstrument(False, False)]
+        self.instruments = [self.opening, self.niceness, self.fitness, self.acceptance] + self.responses
 
     def reset_metrics(self):
         self.offer_list.clear()
         self.num_accepts = 0
+        self.num_games = 0
 
     def plot_metrics(self):
         for instrument in self.instruments:
@@ -156,6 +160,7 @@ class Tournament:
                 if logging:
                     print(offer, recipient.acceptance)
                 self.num_accepts += 1 if accept else 0
+                self.num_games += 1
                 self.offer_list.append(offer)
         if logging:
             print()
@@ -163,13 +168,15 @@ class Tournament:
     def loop(self, rounds: int = 1):
         for i in range(rounds):
             for _ in range(self.games_per_round):
-                self.step(logging=i == rounds - 1)
+                self.step()  # logging=i == rounds - 1)
                 self.acceptance.update(self)
                 for agent in self.agents:
                     agent.reset()
             self.opening.update(self)
             self.niceness.update(self)
             self.fitness.update(self)
+            for r in self.responses:
+                r.update(self)
             self.reset_metrics()
             sort = sorted(range(len(self.agents)), key=lambda i: self.agents[i].money)
             lowest = sort[:10]
@@ -212,12 +219,12 @@ class OpeningInstrument(Instrument):
         return np.mean(tour.offer_list)
 
     def title(self):
-        return 'Opening'
+        return 'Offer'
 
 
 class NicenessInstrument(Instrument):
     def measure(self, tour: Tournament):
-        return tour.num_accepts / (len(tour.agents) * tour.iterations * tour.games_per_round)
+        return (tour.num_accepts / tour.num_games + np.mean(tour.offer_list)) / 2
 
     def title(self):
         return 'Niceness'
@@ -237,6 +244,20 @@ class FitnessInstrument(Instrument):
 
     def title(self):
         return 'Fitness'
+
+
+class ResponseInstrument(Instrument):
+    def __init__(self, offer, accept):
+        super().__init__()
+        self.measure_offer = 'O' if offer else 'A'
+        self.accept = accept
+
+    def measure(self, tour: Tournament):
+        return np.mean([sum(a.genotype[self.measure_offer][k] for k in a.genotype[self.measure_offer]\
+                            if k[1] is not None and k[1] == self.accept) / 3 for a in tour.agents])
+
+    def title(self):
+        return f'{"Offer" if self.measure_offer == "O" else "Acceptance"} Response to {"Acceptance" if self.accept else "Rejection"}'
 
 
 def rand_list(length: int) -> List[float]:
@@ -266,6 +287,70 @@ def main():
         file.write(json.dumps(dct))
     # t.step()
     t.plot_metrics()
+
+
+def plot_data():
+    with open('data/adaptiveagents.json', 'r') as file:
+        data = json.loads(file.readline())
+    for name, vals in data.items():
+        if name == 'final_agents':
+            continue
+        plt.plot(vals)
+        plt.title(name)
+        plt.show()
+    fit = np.array(data['fitness'])
+    nice = np.array(data['niceness'])
+    print(np.sum(np.abs(fit / 100 - nice)))
+
+
+class AlwaysAccept(ConstantAgent):
+    def __init__(self):
+        super().__init__(random.random(), 0)
+
+    def copy(self):
+        return AlwaysAccept()
+
+
+class Alternate(Agent):
+    def __init__(self):
+        super().__init__()
+        self.will_accept = True
+        self.offer = random.random()
+
+    @property
+    def acceptance(self):
+        return 0 if self.will_accept else 1
+
+    def accept(self, offerer: 'Agent', amount: float) -> bool:
+        self.will_accept = not self.will_accept
+        return self.will_accept
+
+    def make_offer(self, recipient: 'Agent') -> float:
+        return self.offer
+
+    def copy(self):
+        a = Alternate()
+        a.offer = self.offer
+        return a
+
+
+class Random(Agent):
+    def __init__(self, prob_accept=0.5):
+        super().__init__()
+        self.prob_accept = prob_accept
+
+    @property
+    def acceptance(self):
+        return 0
+
+    def accept(self, offerer: 'Agent', amount: float) -> bool:
+        return random.random() < self.prob_accept
+
+    def make_offer(self, recipient: 'Agent') -> float:
+        return random.random()
+
+    def copy(self):
+        return Random(self.prob_accept)
 
 
 if __name__ == '__main__':
