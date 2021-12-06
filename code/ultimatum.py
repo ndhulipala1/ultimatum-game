@@ -1,3 +1,4 @@
+import json
 from abc import ABC, abstractmethod
 from typing import *
 import random
@@ -21,10 +22,11 @@ class Agent(ABC):
         if accept:
             self.increment_money(amount)
             offerer.increment_money(1 - amount)
+        # print(amount, accept)
         return accept
 
     def reset(self):
-        self.money = 0
+        return
 
     @abstractmethod
     def accept(self, offerer: 'Agent', amount: float) -> bool:
@@ -56,8 +58,8 @@ class ConstantAgent(Agent):
         accept_mutate = np.random.choice([-0.01, 0, 0.01])
         return ConstantAgent(self.offer + offer_mutate, self.acceptance + accept_mutate)
 
-class AdaptingAgent(Agent):
 
+class AdaptingAgent(Agent):
     keys = [(None, None),
             (None, True),
             (None, False),
@@ -72,8 +74,8 @@ class AdaptingAgent(Agent):
         :param acceptance: The minimum amount this agent will accept
         """
         super().__init__()
-        self.offer = 0
-        self.acceptance = 0
+        self.offer = 0.5
+        self.acceptance = 0.5
         self.offer_vals = offer_vals
         self.accept_vals = accept_vals
         self.genotype = {'A': dict(zip(self.keys, self.accept_vals)), 'O': dict(zip(self.keys, self.offer_vals))}
@@ -81,13 +83,11 @@ class AdaptingAgent(Agent):
 
     def make_offer(self, recipient: 'Agent'):
         self.offer += self.genotype['O'][self.hist]
+        self.offer = min(max(self.offer, 0), 1)
         return self.offer
 
     def play(self, offerer: 'Agent', amount: float) -> bool:
-        accept = self.accept(offerer, amount)
-        if accept:
-            self.increment_money(amount)
-            offerer.increment_money(1 - amount)
+        accept = super().play(offerer, amount)
         self.hist = self.hist[1], accept
         offerer.hist = offerer.hist[1], accept
         return accept
@@ -95,20 +95,22 @@ class AdaptingAgent(Agent):
     def reset(self):
         super().reset()
         self.hist = None, None
+        self.offer, self.acceptance = 0.5, 0.5
 
     def accept(self, offerer: 'Agent', amount: float) -> bool:
-        self.accept += self.genotype['A'][self.hist]
-        return self.accept
+        self.acceptance += self.genotype['A'][self.hist]
+        self.acceptance = min(max(self.acceptance, 0), 1)
+        return self.acceptance <= amount
 
     def copy(self):
         offer_mutate = self.mutate_vals(self.offer_vals)
         accept_mutate = self.mutate_vals(self.accept_vals)
-        return AdaptingAgent(self, offer_mutate, accept_mutate)
+        return AdaptingAgent(offer_mutate, accept_mutate)
 
     def mutate_vals(self, vals: List[float], prob=0.67) -> List[float]:
-        if np.random.random() < prob_mutate:
-            rand_idx = np.random.random(len(vals))
-            vals[rand_idx] += np.random.choice([-0.01, 0.01])
+        if np.random.random() < prob:
+            rand_idx = np.random.choice(range(len(vals)))
+            vals[rand_idx] += (np.random.random() - 0.5) / 20
         return vals
 
 
@@ -123,7 +125,11 @@ class Tournament:
         self.games_per_round = games_per_round
         self.offer_list: List[float] = []
         self.num_accepts = 0
-        self.instruments: List[Instrument] = []
+        self.opening = OpeningInstrument()
+        self.niceness = NicenessInstrument()
+        self.acceptance = AcceptanceInstrument()
+        self.fitness = FitnessInstrument()
+        self.instruments = [self.opening, self.niceness, self.acceptance, self.fitness]
 
     def reset_metrics(self):
         self.offer_list.clear()
@@ -133,7 +139,7 @@ class Tournament:
         for instrument in self.instruments:
             instrument.plot()
 
-    def step(self, randomize: bool = True):
+    def step(self, randomize: bool = True, logging: bool = False):
         n = len(self.agents)
         pairs = np.arange(n)
         if randomize:
@@ -141,22 +147,37 @@ class Tournament:
         pairs = pairs.reshape((n // 2, 2))
         for offerer_index, recipient_index in pairs:
             offerer, recipient = self.agents[offerer_index], self.agents[recipient_index]
+            if logging:
+                print(f'Offerer: {offerer.genotype["O"]}')
+                print(f'Recipient: {recipient.genotype["A"]}')
             for _ in range(self.iterations):
                 offer = offerer.make_offer(recipient)
-                self.num_accepts += 1 if recipient.play(offerer, offer) else 0
+                accept = recipient.play(offerer, offer)
+                if logging:
+                    print(offer, recipient.acceptance)
+                self.num_accepts += 1 if accept else 0
                 self.offer_list.append(offer)
+        if logging:
+            print()
 
     def loop(self, rounds: int = 1):
         for i in range(rounds):
             for _ in range(self.games_per_round):
-                self.step()
-            self.update_instruments()
+                self.step(logging=i == rounds - 1)
+                self.acceptance.update(self)
+                for agent in self.agents:
+                    agent.reset()
+            self.opening.update(self)
+            self.niceness.update(self)
+            self.fitness.update(self)
             self.reset_metrics()
-            lowest = min(range(len(self.agents)), key=lambda i: self.agents[i].money)
-            highest = max(range(len(self.agents)), key=lambda i: self.agents[i].money)
-            self.agents[lowest] = self.agents[highest].copy()
+            sort = sorted(range(len(self.agents)), key=lambda i: self.agents[i].money)
+            lowest = sort[:10]
+            highest = sort[-1]
+            for low in lowest:
+                self.agents[low] = self.agents[highest].copy()
             for a in self.agents:
-                a.reset()
+                a.money = 0
             if i % (rounds / 100) == 0:
                 print(i)
 
@@ -218,13 +239,32 @@ class FitnessInstrument(Instrument):
         return 'Fitness'
 
 
+def rand_list(length: int) -> List[float]:
+    return [random.random() - 0.5 for _ in range(length)]
+
+
+def rand_adapt_agent():
+    offer = rand_list(len(AdaptingAgent.keys))
+    accept = rand_list(len(AdaptingAgent.keys))
+    # print(offer, accept)
+    return AdaptingAgent(offer, accept)
+
+
 def main():
-    t = Tournament(1000, lambda: ConstantAgent(random.random()), games_per_round=1)
-    t.instruments.append(OpeningInstrument())
-    t.instruments.append(NicenessInstrument())
-    t.instruments.append(FitnessInstrument())
-    t.instruments.append(AcceptanceInstrument())
-    t.loop(100000 // t.games_per_round)
+    t = Tournament(1000, lambda: rand_adapt_agent(),
+                   games_per_round=10, iterations=10)
+    t.loop(10000000 // t.games_per_round // t.iterations)
+    agents = []
+    for a in t.agents:
+        geno = {'A': {str(k): v for k, v in a.genotype['A'].items()},
+                'O': {str(k): v for k, v in a.genotype['O'].items()}}
+        agents.append(geno)
+    dct = {'final_agents': geno}
+    for instr in t.instruments:
+        dct[instr.title().lower()] = tuple(instr.metrics)
+    with open('data/adaptiveagents.json', 'w') as file:
+        file.write(json.dumps(dct))
+    # t.step()
     t.plot_metrics()
 
 
