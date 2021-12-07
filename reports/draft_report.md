@@ -20,24 +20,28 @@ Specifically, we are interested in the relationship between niceness and fitness
 ## Results
 ### Results of Replication
 We ran the initial experiment for 1 million iterations, measuring a few different metrics across time. In Figure 1, the first plot shows the average offer amount. As time goes on, this tends to decrease, eventually hovering just above 0; this shows that the population of agents have learned that they can offer the minimum amount of money, thereby maximizing their own amount. Similarly, the acceptance threshold tends to go down, even becoming negative towards the end. With this, agents will accept any amount offered to them, which, without memory, is the best they can do.
+
 ![Replication Results](imgs/replicacation_results.png)
-Figure 1: How various metrics change over evolution time.
+
+*Figure 1: How various metrics change over evolution time.*
 
 The bottom row shows the amount of money earned and the average “niceness” over time. The money is how we define fitness; agents with the least amount of money after a certain number of games gets killed off, and the agent with the most mutates. This makes for an extremely fast mutation rate, as shown in the bottom left: the fitness quickly increases to 50 before levelling off. Finally, we measured niceness. The niceness metric is the average niceness between the recipients and the offerors. For recipients, niceness is the percent of time they accept an offer. For offerors, the niceness is the average amount offered (an agent is nicer if they tend to offer more money). Despite an initial spike in niceness, it eventually levels out at around 0.5. Based on the other metrics, this likely corresponds to offerors having a niceness close to 0 (offering nothing) and recipients having a niceness close to 1 (accepting everything). Unfortunately, this is not the altruism we hoped to see.
 ### Results of Extension
 After modifying agents so that now they adapt, as highlighted in the ‘Extensions’ section, we ran a similar experiment as above. We ran the experiment for `N = 1000` of those agents for one hundred-thousand rounds, with `g = 10` games per round and `s = 10` iterations per game. (In total, there were 10 million games played.) Part of the player’s genotypes are traits that represent their responses to certain plays. If an offer is accepted or rejected, both players’ offer and acceptance thresholds change. Figure 2 shows these various traits in the players’ genotypes overtime. One aspect that is important to reserve is that players typically do not respond well to rejection. After a rejection, offer amounts tend to decrease and acceptance thresholds seem to increase, which can be seen as a disadvantage since it may be less likely that an offer will be accepted next time.
 | | |
 |:-------------------------:|:-------------------------:|
-<img width=”1604” alt=”Extension A for A” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_A_from_A.png”> | <img width=”1604” alt=”Extension A for R” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_A_from_R.png”> |
-<img width=”1604” alt=”Extension O for A” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_O_from_A.png”> | <img width=”1604” alt=”Extension O for R” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_O_from_R.png”> |
-Figure 2: How various traits in player genotype change over time. Simulation has 1000 players playing 100,000 rounds, each round with 10 games per round and 10 iterations (number of times a pair of players plays together) per game.
+![Extension A for A](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_A_from_A.png) | ![Extension A for R](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_A_from_R.png) |
+![Extension O for A](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_O_from_A.png) | ![Extension O for R](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_O_from_R.png) |
+
+*Figure 2: How various traits in player genotype change over time. Simulation has 1000 players playing 100,000 rounds, each round with 10 games per round and 10 iterations (number of times a pair of players plays together) per game.*
 
 Figure 3 shows the various metrics of the group, including their niceness, average offer, average acceptance, and overall fitness of the players over time. Despite the responses to rejection that are seen in Figure 2, the players seem to be cooperating for most of the game. Offerors tend to offer on average about 0.33, and acceptors tend to always accept (we can note this since the acceptance threshold for a majority of the time is below 0.25), which results in the high niceness metric.
 | | |
 |:-------------------------:|:-------------------------:|
-<img width=”1604” alt=”Extension Acceptance” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_Acceptance.png”> | <img width=”1604” alt=”Extension Offer” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_Offer.png”> |
-<img width=”1604” alt=”Extension Niceness” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_Niceness.png”> | <img width=”1604” alt=”Extension Fitness” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_Fitness.png”> |
-Figure 3: How various metrics evolve over time with adapting agents.
+![Extension Offer](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_Offer.png) | ![Extension Acceptance](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_Acceptance.png) |
+![Extension Niceness](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_Niceness.png) | ![Extension Fitness](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_Fitness.png) |
+
+*Figure 3: How various metrics evolve over time with adapting agents.*
 
 It should be noted that the fitness does decrease by a large margin at the end. This is very likely due to how the agents do not handle rejection very well from both the offeror and acceptor side. Since the majority of the 10 million games played were games that resulted in offers being accepted, there was not enough time for the rejection genotypes to evolve, and when offers started getting rejected, overall fitness decreased. This becomes more evident in the acceptance plot; despite the sudden decrease in overall fitness for players, acceptance thresholds continue to rise, resulting in more rejections.
 
