@@ -8,9 +8,12 @@ We explore an iterative version of the Ultimatum Game. The Ultimatum Game is a g
 
 ## Annotated Bibliography
 
-Altruism may arise from individual selection
+![Altruism may arise from individual selection](https://arxiv.org/pdf/q-bio/0403023.pdf)
+
 Added By Hazel Smith
+
 Sánchez, A., & Cuesta, J. A. (2005). Altruism may arise from individual selection. Journal of theoretical biology, 235(2), 233-240.
+
 The authors of this paper suggest a model to explain altruism using the ultimatum game. The Ultimatum Game goes as follows: two players need to decide how to split M dollars. One of them is assigned to make an offer of how to split the money and the other chooses whether to accept that offer. If they refuse the offer, then neither player receives anything. In this paper the authors suggest a selection model with N players. Each player will have a threshold value of how much money they need to be offered to accept the offer / how much money they will offer. In each time step players are randomly partnered off and play the ultimatum game. In some of the timesteps players with the least amount of money die and those with the most duplicate themselves. Mutation can also occur. The authors found that players tended to evolve towards being more cooperative.
 ## Experiment
 We create an agent-based model where each agent has two values: an acceptance threshold and an offer value. In a game between two agents, the first agent will offer an amount of money that corresponds with their offer value. If it is higher than the receiver’s acceptance threshold, the receiver accepts, and the offerer gets whatever is remaining; otherwise it rejects, and neither gets any money. The fitness of each agent is represented by the amount of money each player has after a certain number of games. During each round, two players play the ultimatum game for a total of s iterations before changing partners. This counts as one game, and there are g games per round. Each loop, after a certain number of games are played, the agents with the lowest fitnesses are discarded, and replaced by clones of the agent of highest fitness with some variability in their two parameters. The agents have no memory of previous games or information about the players they are playing against.
