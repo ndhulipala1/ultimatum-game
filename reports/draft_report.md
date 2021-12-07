@@ -8,7 +8,7 @@ We explore an iterative version of the Ultimatum Game. The Ultimatum Game is a g
 
 ## Annotated Bibliography
 
-![Altruism may arise from individual selection](https://arxiv.org/pdf/q-bio/0403023.pdf)
+[Altruism may arise from individual selection](https://arxiv.org/pdf/q-bio/0403023.pdf)
 
 Added By Hazel Smith
 
