@@ -36,8 +36,8 @@ After modifying agents so that now they can remember, as highlighted in the ‘E
 
 | | |
 |:-------------------------:|:-------------------------:|
-<img width=”1604” alt=”Extension Acceptance” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_Acceptance.png”> | <img width=”1604” alt=”Extension Offer” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_Offer.png”> |
-<img width=”1604” alt=”Extension Niceness” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_Niceness.png”> | <img width=”1604” alt=”Extension Fitness” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_Fitness.png”> |
+![Extension A for A](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_A_from_A.png) | ![Extension A for R](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_A_from_R.png) |
+![Extension O for A](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_O_from_A.png) | ![Extension O for R](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_O_from_R.png) |
 
 Figure 2: How various metrics evolve over time with adapting agents.
 
@@ -45,8 +45,8 @@ Part of the player’s genotypes are traits that represent their responses to ce
 
 | | |
 |:-------------------------:|:-------------------------:|
-<img width=”1604” alt=”Extension A for A” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_A_from_A.png”> | <img width=”1604” alt=”Extension A for R” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_A_from_R.png”> |
-<img width=”1604” alt=”Extension O for A” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_O_from_A.png”> | <img width=”1604” alt=”Extension O for R” src=”https://github.com/ndhulipala1/ultimatum-game/tree/main/reports/imgs/Extension_O_from_R.png”> |
+![Extension Offer](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_Offer.png) | ![Extension Acceptance](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_Acceptance.png) |
+![Extension Niceness](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_Niceness.png) | ![Extension Fitness](https://github.com/ndhulipala1/ultimatum-game/blob/main/reports/imgs/Extension_Fitness.png) |
 
 Figure 3: How various traits in player genotype change over time. Simulation has 1000 players playing 100,000 rounds, each round with 10 games per round and 10 iterations (number of times a pair of players plays together) per game. From upper left going clockwise: the average change among agents in their acceptance threshold overtime after acceptances, the average change among agents in their acceptance thresholds overtime after rejections, the average change among agents in their offer thresholds overtime after rejections, and the average change among agents in their offer thresholds overtime after acceptances. Note that these are derived from the agents’ genotypes, and they change over time as a result of mutation and the worst players being removed from the player pool.
 
